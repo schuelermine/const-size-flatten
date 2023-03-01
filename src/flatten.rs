@@ -1,7 +1,7 @@
 use crate::{flatten_base::ConstSizeFlattenBase, ConstSizeIntoIterator};
 use core::{fmt::Debug, iter::FusedIterator};
 
-/// A version of [`Flatten`] that requires the produced [`IntoIterator`] implements [`crate::ConstSizeIntoIterator`].
+/// A version of [`Flatten`] that requires the produced [`IntoIterator`] implements [`ConstSizeIntoIterator`].
 /// Notably, this `struct` implements [`ExactSizeIterator`].
 ///
 /// [`Flatten`]: core::iter::Flatten

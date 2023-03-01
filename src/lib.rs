@@ -17,3 +17,7 @@ where
 {
     const SIZE: usize;
 }
+
+impl<T, const N: usize> ConstSizeIntoIterator for [T; N] {
+    const SIZE: usize = N;
+}
