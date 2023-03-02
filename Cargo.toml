@@ -6,3 +6,5 @@ license = "MIT"
 readme = "README.md"
 description = "Flatten and FlatMap with constant inner iterator size"
 repository = "https://github.com/schuelermine/const-size-flatten"
+keywords = ["no-std", "iterator"]
+categories = ["data-structures", "no-std", "no-std::no-alloc", "rust-patterns"]
