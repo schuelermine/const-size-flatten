@@ -6,8 +6,7 @@ pub(crate) struct ConstSizeFlattenBase<I, U>
 where
     I: ExactSizeIterator,
     U: ExactSizeIterator,
-    <I as Iterator>::Item:
-        ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = <U as Iterator>::Item>,
+    I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
     base_iter: Fuse<I>,
     front_sub_iter: Option<U>,
@@ -18,8 +17,7 @@ impl<I, U> ConstSizeFlattenBase<I, U>
 where
     I: ExactSizeIterator,
     U: ExactSizeIterator,
-    <I as Iterator>::Item:
-        ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = <U as Iterator>::Item>,
+    I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
     fn len_opt(&self) -> Option<usize> {
         let base_len = self.base_iter.len().checked_mul(I::Item::SIZE)?;
@@ -33,8 +31,7 @@ impl<I, U> Iterator for ConstSizeFlattenBase<I, U>
 where
     I: ExactSizeIterator,
     U: ExactSizeIterator,
-    <I as Iterator>::Item:
-        ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = <U as Iterator>::Item>,
+    I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
     type Item = <U as Iterator>::Item;
     fn next(&mut self) -> Option<Self::Item> {
@@ -58,8 +55,7 @@ impl<I, U> DoubleEndedIterator for ConstSizeFlattenBase<I, U>
 where
     I: ExactSizeIterator + DoubleEndedIterator,
     U: ExactSizeIterator + DoubleEndedIterator,
-    <I as Iterator>::Item:
-        ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = <U as Iterator>::Item>,
+    I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         loop {
@@ -78,8 +74,7 @@ impl<I, U> ExactSizeIterator for ConstSizeFlattenBase<I, U>
 where
     I: ExactSizeIterator,
     U: ExactSizeIterator,
-    <I as Iterator>::Item:
-        ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = <U as Iterator>::Item>,
+    I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
 }
 
