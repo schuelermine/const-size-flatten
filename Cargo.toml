@@ -2,3 +2,7 @@
 name = "const-size-flatten"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+readme = "README.md"
+description = "Flatten and FlatMap with constant inner iterator size"
+repository = "https://github.com/schuelermine/const-size-flatten"
