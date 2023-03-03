@@ -14,6 +14,22 @@ where
     inner: ConstSizeFlattenBase<I, <I::Item as IntoIterator>::IntoIter>,
 }
 
+/// Construct a [`ConstSizeFlatten`] from an [`Iterator`].
+pub fn const_size_flatten<I>(iter: I) -> ConstSizeFlatten<I>
+where
+    I: ExactSizeIterator,
+    I::Item: ConstSizeIntoIterator,
+    <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
+{
+    ConstSizeFlatten {
+        inner: ConstSizeFlattenBase {
+            base_iter: iter.fuse(),
+            front_sub_iter: None,
+            back_sub_iter: None,
+        },
+    }
+}
+
 impl<I> Clone for ConstSizeFlatten<I>
 where
     I: ExactSizeIterator + Clone,

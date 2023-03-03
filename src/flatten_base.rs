@@ -8,9 +8,9 @@ where
     U: ExactSizeIterator,
     I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
-    base_iter: Fuse<I>,
-    front_sub_iter: Option<U>,
-    back_sub_iter: Option<U>,
+    pub(crate) base_iter: Fuse<I>,
+    pub(crate) front_sub_iter: Option<U>,
+    pub(crate) back_sub_iter: Option<U>,
 }
 
 impl<I, U> ConstSizeFlattenBase<I, U>

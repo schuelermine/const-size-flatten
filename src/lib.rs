@@ -1,9 +1,10 @@
 #![no_std]
+//! To use, just `use const_size_flatten::ConstSizeFlattenIteratorExtension`.
 
 mod flatmap;
-pub use flatmap::ConstSizeFlatMap;
+pub use flatmap::*;
 mod flatten;
-pub use flatten::ConstSizeFlatten;
+pub use flatten::*;
 mod flatten_base;
 
 /// Implementors of this trait promise that all iterators they produce always produce the same number of elements.
@@ -21,3 +22,62 @@ where
 impl<T, const N: usize> ConstSizeIntoIterator for [T; N] {
     const SIZE: usize = N;
 }
+
+impl<T, const N: usize> ConstSizeIntoIterator for &[T; N] {
+    const SIZE: usize = N;
+}
+
+impl<T, const N: usize> ConstSizeIntoIterator for &mut [T; N] {
+    const SIZE: usize = N;
+}
+
+impl<I> ConstSizeIntoIterator for ConstSizeFlatten<I>
+where
+    I: ConstSizeIntoIterator + ExactSizeIterator,
+    I::IntoIter: ExactSizeIterator,
+    <I as Iterator>::Item: ConstSizeIntoIterator,
+    <<I as Iterator>::Item as IntoIterator>::IntoIter: ExactSizeIterator,
+{
+    const SIZE: usize = I::SIZE * <<I as Iterator>::Item as ConstSizeIntoIterator>::SIZE;
+}
+
+impl<I, U, F> ConstSizeIntoIterator for ConstSizeFlatMap<I, U, F>
+where
+    I: ConstSizeIntoIterator + ExactSizeIterator,
+    I::IntoIter: ExactSizeIterator,
+    F: FnMut(<I as Iterator>::Item) -> U,
+    U: ConstSizeIntoIterator,
+    U::IntoIter: ExactSizeIterator,
+{
+    const SIZE: usize = I::SIZE * U::SIZE;
+}
+
+/// Convenience `trait` that allows you to construct [`ConstSizeFlatten`] and [`ConstSizeFlatMap`].
+pub trait ConstSizeIteratorExtension {
+    /// Construct a [`ConstSizeFlatten`] from an [`Iterator`].
+    /// This is the `impl` version of [`const_size_flatten`]
+    fn const_size_flatten(self) -> ConstSizeFlatten<Self>
+    where
+        Self: ExactSizeIterator,
+        Self::Item: ConstSizeIntoIterator,
+        <Self::Item as IntoIterator>::IntoIter: ExactSizeIterator,
+        Self: Sized,
+    {
+        const_size_flatten(self)
+    }
+
+    /// Construct a [`ConstSizeFlatMap`] from an [`Iterator`].
+    /// This is the `impl` version of [`const_size_flat_map`]
+    fn const_size_flat_map<U, F>(self, f: F) -> ConstSizeFlatMap<Self, U, F>
+    where
+        Self: ExactSizeIterator,
+        F: FnMut(Self::Item) -> U,
+        U: ConstSizeIntoIterator,
+        U::IntoIter: ExactSizeIterator,
+        Self: Sized,
+    {
+        const_size_flat_map(self, f)
+    }
+}
+
+impl<T> ConstSizeIteratorExtension for T {}

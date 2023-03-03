@@ -18,6 +18,23 @@ where
     inner: ConstSizeFlattenBase<Map<I, F>, U::IntoIter>,
 }
 
+/// Construct a [`ConstSizeFlatMap`] from an [`Iterator`].
+pub fn const_size_flat_map<I, U, F>(iter: I, f: F) -> ConstSizeFlatMap<I, U, F>
+where
+    I: ExactSizeIterator,
+    F: FnMut(I::Item) -> U,
+    U: ConstSizeIntoIterator,
+    U::IntoIter: ExactSizeIterator,
+{
+    ConstSizeFlatMap {
+        inner: ConstSizeFlattenBase {
+            base_iter: iter.map(f).fuse(),
+            front_sub_iter: None,
+            back_sub_iter: None,
+        },
+    }
+}
+
 impl<I, U, F> Clone for ConstSizeFlatMap<I, U, F>
 where
     I: ExactSizeIterator + Clone,
