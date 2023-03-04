@@ -4,7 +4,7 @@ use core::iter::Fuse;
 #[derive(Clone, Debug)]
 pub(crate) struct ConstSizeFlattenBase<I, U>
 where
-    I: ExactSizeIterator,
+    I: Iterator,
     U: ExactSizeIterator,
     I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
@@ -15,21 +15,35 @@ where
 
 impl<I, U> ConstSizeFlattenBase<I, U>
 where
-    I: ExactSizeIterator,
+    I: Iterator,
     U: ExactSizeIterator,
     I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
-    fn len_opt(&self) -> Option<usize> {
-        let base_len = self.base_iter.len().checked_mul(I::Item::SIZE)?;
-        let front_len = self.front_sub_iter.as_ref().map_or(0, U::len);
-        let back_len = self.back_sub_iter.as_ref().map_or(0, U::len);
-        base_len.checked_add(front_len)?.checked_add(back_len)
+    fn max_size(&self) -> Option<usize> {
+        let base_iter_max_size = self.base_iter.size_hint().1?;
+        let inner_iter_len = <I::Item as ConstSizeIntoIterator>::SIZE;
+        let front_sub_iter_len = self.front_sub_iter.as_ref().map(U::len)?;
+        let back_sub_iter_len = self.back_sub_iter.as_ref().map(U::len)?;
+        base_iter_max_size
+            .checked_mul(inner_iter_len)?
+            .checked_add(front_sub_iter_len)?
+            .checked_add(back_sub_iter_len)
+    }
+    fn min_size(&self) -> usize {
+        let base_iter_min_size = self.base_iter.size_hint().0;
+        let inner_iter_len = <I::Item as ConstSizeIntoIterator>::SIZE;
+        let front_sub_iter_len = self.front_sub_iter.as_ref().map_or(0, U::len);
+        let back_sub_iter_len = self.back_sub_iter.as_ref().map_or(0, U::len);
+        base_iter_min_size
+            .saturating_mul(inner_iter_len)
+            .saturating_add(front_sub_iter_len)
+            .saturating_add(back_sub_iter_len)
     }
 }
 
 impl<I, U> Iterator for ConstSizeFlattenBase<I, U>
 where
-    I: ExactSizeIterator,
+    I: Iterator,
     U: ExactSizeIterator,
     I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
@@ -46,14 +60,13 @@ where
         }
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len_opt = self.len_opt();
-        (len_opt.unwrap_or(usize::MAX), len_opt)
+        (self.min_size(), self.max_size())
     }
 }
 
 impl<I, U> DoubleEndedIterator for ConstSizeFlattenBase<I, U>
 where
-    I: ExactSizeIterator + DoubleEndedIterator,
+    I: DoubleEndedIterator,
     U: ExactSizeIterator + DoubleEndedIterator,
     I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
 {
@@ -68,14 +81,6 @@ where
             }
         }
     }
-}
-
-impl<I, U> ExactSizeIterator for ConstSizeFlattenBase<I, U>
-where
-    I: ExactSizeIterator,
-    U: ExactSizeIterator,
-    I::Item: ConstSizeIntoIterator + IntoIterator<IntoIter = U, Item = U::Item>,
-{
 }
 
 fn and_then_or_clear<T, U>(opt: &mut Option<T>, f: impl FnOnce(&mut T) -> Option<U>) -> Option<U> {

@@ -2,12 +2,13 @@ use crate::{flatten_base::ConstSizeFlattenBase, ConstSizeIntoIterator};
 use core::{fmt::Debug, iter::FusedIterator};
 
 /// A version of [`Flatten`] that requires the produced [`IntoIterator`] implements [`ConstSizeIntoIterator`].
-/// Notably, this `struct` implements [`ExactSizeIterator`].
+/// Notably, this `struct` produces accurate lower & upper bounds using [`Iterator::size_hint`].
+/// Unfortunately it cannot implement [`ExactSizeIterator`] because the length may exceed [`usize::MAX`].
 ///
 /// [`Flatten`]: core::iter::Flatten
 pub struct ConstSizeFlatten<I>
 where
-    I: ExactSizeIterator,
+    I: Iterator,
     I::Item: ConstSizeIntoIterator,
     <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
 {
@@ -17,7 +18,7 @@ where
 /// Construct a [`ConstSizeFlatten`] from an [`Iterator`].
 pub fn const_size_flatten<I>(iter: I) -> ConstSizeFlatten<I>
 where
-    I: ExactSizeIterator,
+    I: Iterator,
     I::Item: ConstSizeIntoIterator,
     <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
 {
@@ -32,7 +33,7 @@ where
 
 impl<I> Clone for ConstSizeFlatten<I>
 where
-    I: ExactSizeIterator + Clone,
+    I: Iterator + Clone,
     I::Item: ConstSizeIntoIterator,
     <I::Item as IntoIterator>::IntoIter: ExactSizeIterator + Clone,
 {
@@ -45,7 +46,7 @@ where
 
 impl<I> Debug for ConstSizeFlatten<I>
 where
-    I: ExactSizeIterator + Debug,
+    I: Iterator + Debug,
     I::Item: ConstSizeIntoIterator,
     <I::Item as IntoIterator>::IntoIter: ExactSizeIterator + Debug,
 {
@@ -58,7 +59,7 @@ where
 
 impl<I> DoubleEndedIterator for ConstSizeFlatten<I>
 where
-    I: ExactSizeIterator + DoubleEndedIterator,
+    I: Iterator + DoubleEndedIterator,
     I::Item: ConstSizeIntoIterator,
     <I::Item as IntoIterator>::IntoIter: ExactSizeIterator + DoubleEndedIterator,
 {
@@ -69,7 +70,7 @@ where
 
 impl<I> Iterator for ConstSizeFlatten<I>
 where
-    I: ExactSizeIterator,
+    I: Iterator,
     I::Item: ConstSizeIntoIterator,
     <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
 {
@@ -84,15 +85,7 @@ where
 
 impl<I> FusedIterator for ConstSizeFlatten<I>
 where
-    I: ExactSizeIterator,
-    I::Item: ConstSizeIntoIterator,
-    <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
-{
-}
-
-impl<I> ExactSizeIterator for ConstSizeFlatten<I>
-where
-    I: ExactSizeIterator,
+    I: Iterator,
     I::Item: ConstSizeIntoIterator,
     <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
 {

@@ -5,12 +5,13 @@ use core::{
 };
 
 /// A version of [`FlatMap`] that requires the produced [`IntoIterator`] implements [`ConstSizeIntoIterator`].
-/// Notably, this `struct` implements [`ExactSizeIterator`].
+/// Notably, this `struct` produces accurate lower & upper bounds using [`Iterator::size_hint`].
+/// Unfortunately it cannot implement [`ExactSizeIterator`] because the length may exceed [`usize::MAX`].
 ///
 /// [`FlatMap`]: core::iter::FlatMap
 pub struct ConstSizeFlatMap<I, U, F>
 where
-    I: ExactSizeIterator,
+    I: Iterator,
     F: FnMut(I::Item) -> U,
     U: ConstSizeIntoIterator,
     U::IntoIter: ExactSizeIterator,
@@ -21,7 +22,7 @@ where
 /// Construct a [`ConstSizeFlatMap`] from an [`Iterator`].
 pub fn const_size_flat_map<I, U, F>(iter: I, f: F) -> ConstSizeFlatMap<I, U, F>
 where
-    I: ExactSizeIterator,
+    I: Iterator,
     F: FnMut(I::Item) -> U,
     U: ConstSizeIntoIterator,
     U::IntoIter: ExactSizeIterator,
@@ -37,7 +38,7 @@ where
 
 impl<I, U, F> Clone for ConstSizeFlatMap<I, U, F>
 where
-    I: ExactSizeIterator + Clone,
+    I: Iterator + Clone,
     F: FnMut(I::Item) -> U + Clone,
     U: ConstSizeIntoIterator + Clone,
     U::IntoIter: ExactSizeIterator + Clone,
@@ -51,7 +52,7 @@ where
 
 impl<I, U, F> Debug for ConstSizeFlatMap<I, U, F>
 where
-    I: ExactSizeIterator + Debug,
+    I: Iterator + Debug,
     F: FnMut(I::Item) -> U,
     U: ConstSizeIntoIterator,
     U::IntoIter: ExactSizeIterator + Debug,
@@ -65,7 +66,7 @@ where
 
 impl<I, U, F> DoubleEndedIterator for ConstSizeFlatMap<I, U, F>
 where
-    I: ExactSizeIterator + DoubleEndedIterator,
+    I: Iterator + DoubleEndedIterator,
     F: FnMut(I::Item) -> U,
     U: ConstSizeIntoIterator,
     U::IntoIter: ExactSizeIterator + DoubleEndedIterator,
@@ -77,7 +78,7 @@ where
 
 impl<I, U, F> Iterator for ConstSizeFlatMap<I, U, F>
 where
-    I: ExactSizeIterator,
+    I: Iterator,
     F: FnMut(I::Item) -> U,
     U: ConstSizeIntoIterator,
     U::IntoIter: ExactSizeIterator,
@@ -93,16 +94,7 @@ where
 
 impl<I, U, F> FusedIterator for ConstSizeFlatMap<I, U, F>
 where
-    I: ExactSizeIterator,
-    F: FnMut(I::Item) -> U,
-    U: ConstSizeIntoIterator,
-    U::IntoIter: ExactSizeIterator,
-{
-}
-
-impl<I, U, F> ExactSizeIterator for ConstSizeFlatMap<I, U, F>
-where
-    I: ExactSizeIterator,
+    I: Iterator,
     F: FnMut(I::Item) -> U,
     U: ConstSizeIntoIterator,
     U::IntoIter: ExactSizeIterator,

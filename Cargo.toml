@@ -1,6 +1,6 @@
 [package]
 name = "const-size-flatten"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 readme = "README.md"
@@ -9,5 +9,3 @@ repository = "https://github.com/schuelermine/const-size-flatten"
 keywords = ["no-std", "iterator"]
 categories = ["data-structures", "no-std", "no-std::no-alloc", "rust-patterns"]
 
-[dev-dependencies]
-paste = "1.0.11"
