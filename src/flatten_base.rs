@@ -22,8 +22,8 @@ where
     fn max_size(&self) -> Option<usize> {
         let base_iter_max_size = self.base_iter.size_hint().1?;
         let inner_iter_len = <I::Item as ConstSizeIntoIterator>::SIZE;
-        let front_sub_iter_len = self.front_sub_iter.as_ref().map(U::len)?;
-        let back_sub_iter_len = self.back_sub_iter.as_ref().map(U::len)?;
+        let front_sub_iter_len = self.front_sub_iter.as_ref().map_or(0, U::len);
+        let back_sub_iter_len = self.back_sub_iter.as_ref().map_or(0, U::len);
         base_iter_max_size
             .checked_mul(inner_iter_len)?
             .checked_add(front_sub_iter_len)?
