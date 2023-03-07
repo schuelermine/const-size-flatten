@@ -1,6 +1,6 @@
 #![no_std]
 //! Versions of [`FlatMap`] and [`Flatten`] that know their inner iterators’ size in advance.
-//! Note that [`core`] & [`std`] already provide this functionality for some types through a hack using specialization.
+//! Note that [`core`] & `std` already provide this functionality for some types through a hack using specialization.
 //! This crate’s contribution is that the trait [`ConstSizeIntoIterator`] is public and the functionality is therefore extensible.
 //!
 //! To use, just `use const_size_flatten::ConstSizeFlattenIteratorExtension`.
