@@ -1,6 +1,6 @@
 [package]
 name = "const-size-flatten"
-version = "0.4.3"
+version = "0.4.4"
 edition = "2021"
 license = "MIT"
 readme = "README.md"
@@ -8,4 +8,3 @@ description = "Flatten and FlatMap with constant inner iterator size"
 repository = "https://github.com/schuelermine/const-size-flatten"
 keywords = ["no-std", "iterator"]
 categories = ["data-structures", "no-std", "no-std::no-alloc", "rust-patterns"]
-
