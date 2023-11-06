@@ -4,18 +4,14 @@ use paste::paste;
 fn test<const N: usize>() {
     let mut iter = [[(); N]; 3].into_iter().const_size_flatten();
     let mut consumed = 0;
-    while 'a: {
+    while matches!(
         if consumed % 8 == 7 {
-            let Some(()) = iter.next() else {
-                break 'a false;
-            };
+            iter.next()
         } else {
-            let Some(()) = iter.next_back() else {
-                break 'a false;
-            };
-        }
-        true
-    } {
+            iter.next_back()
+        },
+        Some(())
+    ) {
         consumed += 1;
         assert_eq!(N * 3 - consumed, iter.size_hint().0);
     }
