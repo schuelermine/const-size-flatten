@@ -1,41 +1,49 @@
 use crate::{flatten_base::ConstSizeFlattenBase, ConstSizeIntoIterator};
 use core::{fmt::Debug, iter::FusedIterator};
 
-/// A version of [`Flatten`] that requires the produced [`IntoIterator`] implements [`ConstSizeIntoIterator`].
-/// Notably, this `struct` produces accurate lower & upper bounds using [`Iterator::size_hint`].
-/// Unfortunately it cannot implement [`ExactSizeIterator`] because the length may exceed [`usize::MAX`].
+/// A version of [`Flatten`] that knows its inner iterators’ size in advance,
+/// and can produce accurate lower and upper bounds using [`Iterator::size_hint`].
+/// This iterator does not require [`ExactSizeIterator`] for the inner iterators.
+/// It can nonetheless provide an accurate length via [`Iterator::size_hint`] if they implement it.
+/// This iterator does not implement [`ExactSizeIterator`], even if the inner iterators implement it.
+/// This is because the nesting may cause the size to exceed [`usize::MAX`].
 ///
 /// [`Flatten`]: core::iter::Flatten
 pub struct ConstSizeFlatten<I>
 where
     I: Iterator,
-    I::Item: ConstSizeIntoIterator,
-    <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
+    I::Item: IntoIterator,
 {
     inner: ConstSizeFlattenBase<I, <I::Item as IntoIterator>::IntoIter>,
 }
 
-/// Construct a [`ConstSizeFlatten`] from an [`Iterator`].
-pub fn const_size_flatten<I>(iter: I) -> ConstSizeFlatten<I>
+impl<I> ConstSizeFlatten<I>
 where
     I: Iterator,
-    I::Item: ConstSizeIntoIterator,
-    <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
+    I::Item: IntoIterator,
 {
-    ConstSizeFlatten {
-        inner: ConstSizeFlattenBase {
-            base_iter: iter.fuse(),
-            front_sub_iter: None,
-            back_sub_iter: None,
-        },
+    /// Construct a [`ConstSizeFlatten`] from an [`IntoIterator`] (which includes [`Iterator`]s).
+    fn new<U: IntoIterator<IntoIter = I>>(iter: U) -> Self {
+        Self {
+            inner: ConstSizeFlattenBase::new(iter),
+        }
     }
+}
+
+/// Construct a [`ConstSizeFlatten`] from an [`IntoIterator`] (which includes [`Iterator`]s).
+pub fn const_size_flatten<I>(iter: I) -> ConstSizeFlatten<I::IntoIter>
+where
+    I: IntoIterator,
+    I::Item: IntoIterator,
+{
+    ConstSizeFlatten::new(iter)
 }
 
 impl<I> Clone for ConstSizeFlatten<I>
 where
     I: Iterator + Clone,
-    I::Item: ConstSizeIntoIterator,
-    <I::Item as IntoIterator>::IntoIter: ExactSizeIterator + Clone,
+    I::Item: IntoIterator,
+    <I::Item as IntoIterator>::IntoIter: Clone,
 {
     fn clone(&self) -> Self {
         ConstSizeFlatten {
@@ -47,8 +55,8 @@ where
 impl<I> Debug for ConstSizeFlatten<I>
 where
     I: Iterator + Debug,
-    I::Item: ConstSizeIntoIterator,
-    <I::Item as IntoIterator>::IntoIter: ExactSizeIterator + Debug,
+    I::Item: IntoIterator,
+    <I::Item as IntoIterator>::IntoIter: Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("ConstSizeFlatten")
@@ -57,22 +65,10 @@ where
     }
 }
 
-impl<I> DoubleEndedIterator for ConstSizeFlatten<I>
-where
-    I: Iterator + DoubleEndedIterator,
-    I::Item: ConstSizeIntoIterator,
-    <I::Item as IntoIterator>::IntoIter: ExactSizeIterator + DoubleEndedIterator,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.inner.next_back()
-    }
-}
-
 impl<I> Iterator for ConstSizeFlatten<I>
 where
     I: Iterator,
     I::Item: ConstSizeIntoIterator,
-    <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
 {
     type Item = <I::Item as IntoIterator>::Item;
     fn next(&mut self) -> Option<Self::Item> {
@@ -83,10 +79,20 @@ where
     }
 }
 
+impl<I> DoubleEndedIterator for ConstSizeFlatten<I>
+where
+    I: DoubleEndedIterator,
+    I::Item: ConstSizeIntoIterator,
+    <I::Item as IntoIterator>::IntoIter: DoubleEndedIterator,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back()
+    }
+}
+
 impl<I> FusedIterator for ConstSizeFlatten<I>
 where
     I: Iterator,
     I::Item: ConstSizeIntoIterator,
-    <I::Item as IntoIterator>::IntoIter: ExactSizeIterator,
 {
 }

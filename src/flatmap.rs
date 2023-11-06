@@ -4,44 +4,48 @@ use core::{
     iter::{FusedIterator, Map},
 };
 
-/// A version of [`FlatMap`] that requires the produced [`IntoIterator`] implements [`ConstSizeIntoIterator`].
-/// Notably, this `struct` produces accurate lower & upper bounds using [`Iterator::size_hint`].
-/// Unfortunately it cannot implement [`ExactSizeIterator`] because the length may exceed [`usize::MAX`].
+/// A version of [`FlatMap`] that knows its inner iterators’ size in advance,
+/// and can produce accurate lower and upper bounds using [`Iterator::size_hint`].
+/// This iterator does not require [`ExactSizeIterator`] for the inner iterators.
+/// It can nonetheless provide an accurate length via [`Iterator::size_hint`] if they implement it.
+/// This iterator does not implement [`ExactSizeIterator`], even if the inner iterators implement it.
+/// This is because the nesting may cause the size to exceed [`usize::MAX`].
 ///
 /// [`FlatMap`]: core::iter::FlatMap
-pub struct ConstSizeFlatMap<I, U, F>
-where
-    I: Iterator,
-    F: FnMut(I::Item) -> U,
-    U: ConstSizeIntoIterator,
-    U::IntoIter: ExactSizeIterator,
-{
+pub struct ConstSizeFlatMap<I, U: IntoIterator, F> {
     inner: ConstSizeFlattenBase<Map<I, F>, U::IntoIter>,
 }
 
-/// Construct a [`ConstSizeFlatMap`] from an [`Iterator`].
-pub fn const_size_flat_map<I, U, F>(iter: I, f: F) -> ConstSizeFlatMap<I, U, F>
+impl<I, U, F> ConstSizeFlatMap<I, U, F>
 where
     I: Iterator,
+    U: IntoIterator,
     F: FnMut(I::Item) -> U,
-    U: ConstSizeIntoIterator,
-    U::IntoIter: ExactSizeIterator,
 {
-    ConstSizeFlatMap {
-        inner: ConstSizeFlattenBase {
-            base_iter: iter.map(f).fuse(),
-            front_sub_iter: None,
-            back_sub_iter: None,
-        },
+    /// Construct a [`ConstSizeFlatMap`] from an [`IntoIterator`] (which includes [`Iterator`]s).
+    fn new<J: IntoIterator<IntoIter = I>>(iter: J, f: F) -> Self {
+        Self {
+            inner: ConstSizeFlattenBase::new(iter.into_iter().map(f)),
+        }
     }
+}
+
+/// Construct a [`ConstSizeFlatMap`] from an [`IntoIterator`] (which includes [`Iterator`]s).
+pub fn const_size_flat_map<I, U, F>(iter: I, f: F) -> ConstSizeFlatMap<I::IntoIter, U, F>
+where
+    I: IntoIterator,
+    U: IntoIterator,
+    F: FnMut(I::Item) -> U,
+{
+    ConstSizeFlatMap::new(iter, f)
 }
 
 impl<I, U, F> Clone for ConstSizeFlatMap<I, U, F>
 where
-    I: Iterator + Clone,
-    F: FnMut(I::Item) -> U + Clone,
-    U: ConstSizeIntoIterator + Clone,
-    U::IntoIter: ExactSizeIterator + Clone,
+    I: Clone,
+    F: Clone,
+    U: IntoIterator,
+    U::IntoIter: Clone,
 {
     fn clone(&self) -> Self {
         ConstSizeFlatMap {
@@ -52,10 +56,9 @@ where
 
 impl<I, U, F> Debug for ConstSizeFlatMap<I, U, F>
 where
-    I: Iterator + Debug,
-    F: FnMut(I::Item) -> U,
-    U: ConstSizeIntoIterator,
-    U::IntoIter: ExactSizeIterator + Debug,
+    I: Debug,
+    U: IntoIterator,
+    U::IntoIter: Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("ConstSizeFlatMap")
@@ -64,24 +67,11 @@ where
     }
 }
 
-impl<I, U, F> DoubleEndedIterator for ConstSizeFlatMap<I, U, F>
-where
-    I: Iterator + DoubleEndedIterator,
-    F: FnMut(I::Item) -> U,
-    U: ConstSizeIntoIterator,
-    U::IntoIter: ExactSizeIterator + DoubleEndedIterator,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.inner.next_back()
-    }
-}
-
 impl<I, U, F> Iterator for ConstSizeFlatMap<I, U, F>
 where
     I: Iterator,
     F: FnMut(I::Item) -> U,
     U: ConstSizeIntoIterator,
-    U::IntoIter: ExactSizeIterator,
 {
     type Item = U::Item;
     fn next(&mut self) -> Option<Self::Item> {
@@ -92,11 +82,22 @@ where
     }
 }
 
+impl<I, U, F> DoubleEndedIterator for ConstSizeFlatMap<I, U, F>
+where
+    I: DoubleEndedIterator,
+    F: FnMut(I::Item) -> U,
+    U: ConstSizeIntoIterator,
+    U::IntoIter: DoubleEndedIterator,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back()
+    }
+}
+
 impl<I, U, F> FusedIterator for ConstSizeFlatMap<I, U, F>
 where
     I: Iterator,
     F: FnMut(I::Item) -> U,
     U: ConstSizeIntoIterator,
-    U::IntoIter: ExactSizeIterator,
 {
 }
